@@ -5,137 +5,114 @@ using UnityEngine;
 public class ProjectileLine : MonoBehaviour
 {
     static public ProjectileLine S;
-    [Header("Set in Ispector")]
+    [Header("Set in Inspector")]
     public float minDist = 0.1f;
-    private LineRenderer _line;
+    private LineRenderer line;
     private GameObject _poi;
-    private List<Vector3> _points;
-    private bool _isLaunched = false;
+    private List<Vector3> points;
+
 
     void Awake()
     {
         S = this;
-        _line = GetComponent<LineRenderer>();
-        _line.enabled = false;
-        _points = new List<Vector3>();
+        line = GetComponent<LineRenderer>();
+        line.enabled = false;
+        points = new List<Vector3>();
     }
 
-    public GameObject poi 
+    public GameObject poi
     {
-        get 
+        get
         {
             return (_poi);
         }
         set
         {
             _poi = value;
-            if ( _poi != null )
-            {
-                _line.enabled = false;
-                _points = new List<Vector3>();
+            if ( _poi != null ) {
+                line.enabled = false;
+                points = new List<Vector3>();
                 AddPoint();
             }
         }
     }
 
+
     public void Clear()
     {
         _poi = null;
-        _line.enabled = false;
-        _points = new List<Vector3>();
-
+        line.enabled = false;
+        points = new List<Vector3>();
     }
+
 
     public void AddPoint()
     {
         Vector3 pt = _poi.transform.position;
-        if (_points.Count > 0 && (pt - lastPoint).magnitude < minDist)
+        if (points.Count > 0 && (pt - lastPoint).magnitude < minDist)
         {
             return;
         }
-
-        _points.Add(pt);
-        _line.positionCount = _points.Count;
-
-        for (int i = 0; i < _points.Count; i++)
-        {
-            _line.SetPosition(i, _points[i]);
+        if (points.Count == 0)
+        { 
+            Vector3 launchPosDiff = pt - Slingshot_vs.LAUNCH_POS; 
+            points.Add(pt + launchPosDiff);
+            points.Add(pt);
+            line.positionCount = 2;
+            line.SetPosition(0, points[0]);
+            line.SetPosition(1, points[1]);
+            line.enabled = true;
         }
-
-        _line.enabled = true;
+        else
+        {
+            points.Add(pt);
+            line.positionCount = points.Count;
+            line.SetPosition(points.Count - 1, lastPoint);
+            line.enabled = true;
+        }
     }
 
 
     public Vector3 lastPoint
     {
-        get{
-            if(_points == null)
+        get
+        {
+            if (points == null)
             {
                 return (Vector3.zero);
             }
-            return (_points[_points.Count-1]);
+            return (points[points.Count - 1]);
         }
     }
 
-
-    public void ClearPreviousTrajectory()
-    {
-        if (_points.Count > 2)
-        {
-            _points.RemoveRange(0, _points.Count - 2);
-            _line.positionCount = _points.Count;
-
-            for (int i = 0; i < _points.Count; i++)
-            {
-                _line.SetPosition(i, _points[i]);
-            }
-        }
-    }
-
-
-    public void AddEmptyPoint()
-    {
-        if (_points.Count > 0)
-        {
-            _points.Add(_points[_points.Count - 1]);
-        }
-    }
-
-
-    // Start is called before the first frame update
-    void Start()
-    {
-        
-    }
-
-    // Update is called once per frame
     void FixedUpdate()
     {
-        if (_poi == null)
+        if (poi == null)
         {
             if (FollowCam.POI != null)
             {
-                _poi = FollowCam.POI;
-                _isLaunched = true;
-                ClearPreviousTrajectory();
-                AddEmptyPoint();
+                if (FollowCam.POI.tag == "Projectile")
+                {
+                    poi = FollowCam.POI;
+                }
+                else
+                {
+                    return;
+                }
             }
             else
             {
                 return;
             }
         }
-
-        if (_isLaunched)
-        {
-            AddPoint();
-        }
-
+        AddPoint();
         if (FollowCam.POI == null)
         {
-            _poi = null;
-            _isLaunched = false;
+            poi = null;
         }
     }
-
 }
+
+
+
+
